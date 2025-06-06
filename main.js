@@ -1,71 +1,85 @@
-window.onload = function() {
-    // Example product data
-    var products = [
-        { id: 1, name: 'MacBook Pro', description: 'This is product 1', price: '$899.99', image: 'macbookpro.png' },
-        { id: 2, name: 'Xbox One', description: 'This is product 2', price: '$199.99', image: 'xboxone.png' },
-        { id: 3, name: 'Computer Monitor', description: 'This is product 3', price: '$129.99', image: 'monitor.png' },
-        { id: 4, name: 'Gaming Mouse', description: 'This is product 4', price: '$95.99', image: 'mouse.png' },
-        { id: 5, name: 'Bluetooth Speaker', description: 'This is product 5', price: '$89.99', image: 'bluetooth.png' },
-        { id: 6, name: 'Wireless iPhone Charger', description: 'This is product 6', price: '$59.99', image: 'charger.png' },
-        { id: 7, name: 'ElfBar', description: 'This is product 6', price: '$19.99', image: 'elfbar.png' },
-        { id: 8, name: 'Xbox Controller', description: 'This is product 6', price: '$49.99', image: 'xbox_controller.png' },
-        { id: 9, name: 'Subwoofer', description: 'This is product 6', price: '$129.99', image: 'subwoofer.png' }
-    ];
+const products = [
+    { id: 1, name: 'MacBook Pro', description: 'High performance laptop', price: 899.99, image: 'macbookpro.png' },
+    { id: 2, name: 'Xbox One', description: 'Gaming console', price: 199.99, image: 'xboxone.png' },
+    { id: 3, name: 'Computer Monitor', description: '24\" HD monitor', price: 129.99, image: 'monitor.png' },
+    { id: 4, name: 'Gaming Mouse', description: 'Ergonomic mouse', price: 95.99, image: 'mouse.png' },
+    { id: 5, name: 'Bluetooth Speaker', description: 'Portable speaker', price: 89.99, image: 'bluetooth.png' },
+    { id: 6, name: 'Wireless Charger', description: 'iPhone compatible', price: 59.99, image: 'charger.png' },
+    { id: 7, name: 'ElfBar', description: 'Disposable vape', price: 19.99, image: 'elfbar.png' },
+    { id: 8, name: 'Xbox Controller', description: 'Wireless controller', price: 49.99, image: 'xbox_controller.png' },
+    { id: 9, name: 'Subwoofer', description: 'Powerful sound', price: 129.99, image: 'subwoofer.png' }
+];
 
-    // Get the products element
-    var productsEl = document.getElementById('products');
-
-    // Populate products
-for (var i = 0; i < products.length; i++) {
-    var productEl = document.createElement('div');
-    productEl.classList.add("product"); // add a class to the product div for CSS styling
-    productEl.innerHTML =
-        '<div class="product-content">' +
-          '<h2>' + products[i].name + '</h2>' +
-          '<p>' + products[i].description + '</p>' +
-          '<div class="product-image-wrapper">' +
-            '<img src="' + products[i].image + '" class="product-image" alt="' + products[i].name + ' image">' +
-          '</div>' +
-          '<p>Price: ' + products[i].price + '</p>' +
-          '<button onclick="addToCart(event, ' + products[i].id + ')">Add to Cart</button>' +
-        '</div>';
-    productsEl.appendChild(productEl);
+function getCart() {
+    return JSON.parse(localStorage.getItem('cart') || '[]');
 }
 
-
-
-    // Get the height of the navigation bar
-    var navHeight = document.querySelector('nav').offsetHeight;
-
-
-
-    // Set the top margin or padding of the sidebar to the height of the navigation bar
-    sidebar.style.marginTop = navHeight + 'px';
-};
-
-function addToCart(event, productId) {
-    event.stopPropagation();
-    alert('Added product ' + productId + ' to cart!');
+function saveCart(cart) {
+    localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-//Get the button:
-var mybutton = document.getElementById("mybutton");
-console.log(mybutton); // This should output the button element to the console
-
-// When the user scrolls down 20px from the top of the document, show the button
-window.onscroll = function() {scrollFunction()};
-
-function scrollFunction() {
-  console.log(document.body.scrollTop, document.documentElement.scrollTop); // This will output the scroll position
-  if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-    mybutton.style.display = "block";
-  } else {
-    mybutton.style.display = "none";
-  }
+function updateCartCount() {
+    const countEl = document.getElementById('cart-count');
+    if (!countEl) return;
+    const cart = getCart();
+    const total = cart.reduce((sum, item) => sum + item.qty, 0);
+    countEl.textContent = total;
 }
 
-// When the user clicks on the button, scroll to the top of the document
-function topFunction() {
-  document.body.scrollTop = 0; // For Safari
-  document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+function addToCart(id) {
+    const cart = getCart();
+    const existing = cart.find(i => i.id === id);
+    if (existing) {
+        existing.qty += 1;
+    } else {
+        cart.push({ id, qty: 1 });
+    }
+    saveCart(cart);
+    updateCartCount();
 }
+
+function renderProducts() {
+    const container = document.getElementById('product-list');
+    if (!container) return;
+    products.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'product';
+        div.innerHTML = `
+            <img src="${p.image}" alt="${p.name}">
+            <h3>${p.name}</h3>
+            <p>${p.description}</p>
+            <p>$${p.price.toFixed(2)}</p>
+            <button data-id="${p.id}">Add to Cart</button>
+        `;
+        div.querySelector('button').addEventListener('click', () => addToCart(p.id));
+        container.appendChild(div);
+    });
+}
+
+function renderCart() {
+    const container = document.getElementById('cart-items');
+    if (!container) return;
+    const totalEl = document.getElementById('cart-total');
+    container.innerHTML = '';
+    const cart = getCart();
+    let total = 0;
+    cart.forEach(item => {
+        const product = products.find(p => p.id === item.id);
+        if (!product) return;
+        total += product.price * item.qty;
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+            <span>${product.name} x ${item.qty}</span>
+            <span>$${(product.price * item.qty).toFixed(2)}</span>
+        `;
+        container.appendChild(div);
+    });
+    totalEl.textContent = `Total: $${total.toFixed(2)}`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    renderProducts();
+    renderCart();
+    updateCartCount();
+});
